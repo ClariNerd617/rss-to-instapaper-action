@@ -1,0 +1,19 @@
+[project]
+name = "rss-to-instapaper-action"
+version = "0.1.0"
+description = """A GitHub Action that periodically
+checks a user-defined set of RSS/Atom feeds for new
+articles and pushes to Instapaper for later reading,
+such as offline on a Kobo."""
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "feedparser>=6.0.12",
+    "httpx>=0.28.1",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.3",
+    "ty>=0.0.1a25",
+]
