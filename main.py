@@ -32,19 +32,19 @@ async def add_articles(urls: list[str]) -> None:
                         f"Article {url} has been successfully added to Instapaper!"
                     )
                 case 400:
-                    log.exception(
+                    raise Exception(
                         f"Error {r.status_code}: Exceeded the rate limit. Try again later. Otherwise, {url} was not accepted."
                     )
                 case 403:
-                    log.exception(
+                    raise Exception(
                         f"Error {r.status_code}: Invalid username or password"
                     )
                 case 500:
-                    log.exception(
+                    raise Exception(
                         f"Error {r.status_code}: Upstream error. Please try again later."
                     )
                 case _:
-                    log.exception(
+                    raise Exception(
                         f"{r.status_code} returned, not documented in Instapaper, please open a ticket at support@help.instapaper.com"
                     )
 
