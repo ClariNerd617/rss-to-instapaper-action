@@ -2,82 +2,78 @@ from httpx import AsyncClient, BasicAuth
 import feedparser as fp
 from os import environ
 import logging
-from json import load
-from datetime import datetime, timedelta
+import listparser
+import sqlite3
+from datetime import datetime, timedelta, timezone
 import asyncio
 
-FORMAT = "%(message)s"
-logging.basicConfig(
-    level="NOTSET",
-    format=FORMAT,
-    datefmt="[%X]",
-)
-log = logging.getLogger("rss_to_instapaper_action")
 
-auth = BasicAuth(
-    username=environ.get("INSTAPAPER_USERNAME", ""),
-    password=environ.get("INSTAPAPER_PASSWORD", ""),
-)
-
-
-async def add_articles(urls: list[str]) -> None:
+async def add_articles(urls: list[str], auth: BasicAuth, log: logging.Logger) -> None:
     async with AsyncClient(
-        baseUrl="https://www.instapaper.com/api/add", auth=auth
+        base_url="https://www.instapaper.com/api/add", auth=auth
     ) as client:
-        async for url in urls:
+        for url in urls:
             r = await client.post(data={"url": url})
-            match r.status_code:
-                case 201:
-                    log.info(
-                        f"Article {url} has been successfully added to Instapaper!"
-                    )
-                case 400:
-                    raise Exception(
-                        f"Error {r.status_code}: Exceeded the rate limit. Try again later. Otherwise, {url} was not accepted."
-                    )
-                case 403:
-                    raise Exception(
-                        f"Error {r.status_code}: Invalid username or password"
-                    )
-                case 500:
-                    raise Exception(
-                        f"Error {r.status_code}: Upstream error. Please try again later."
-                    )
-                case _:
-                    raise Exception(
-                        f"{r.status_code} returned, not documented in Instapaper, please open a ticket at support@help.instapaper.com"
-                    )
+            r.raise_for_status()
 
 
 def get_articles(feeds: list[dict[str, str]]) -> list[str]:
-    # TODO Implement using feedparser
-    # Should use GitHub Actions Cached last_checked datetime
-    # for each feed item and only add urls if they appear
-    # after that cached datetime.
-    #
-    # Also, update GitHub Actions Cached last_checked datetime
-    # for each feed item. Maybe refactor this into three functions?
-    # For dev purposes using json file for both feeds list
-    # and the last_checked.
-    #
-    # feeds data object:
-    #   [
-    #       {
-    #           "url": url,
-    #           "last_checked: datetime.from_isoformat(datestring),
-    #       },
-    #   ]
-    
-    for url, last_checked in feeds.items():
+    """
+    TODO Implement using feedparser\n
+    Will use GitHub Actions to update SQLite DB in repo as detailed in main() below.
+     
+    feeds data object as follows
+    [
+        {
+            "url": url,
+            "last_checked: datetime.from_isoformat(datestring),
+        },
+    ]
+
+    ---
+    """
+
+    for feed in feeds:
+        url = feed["url"]
+        last_checked = feed["last_checked"]
         ...
     return url_list
 
 
 async def main() -> None:
-    with open("./feeds.json") as feedsfile:
-        feeds: list[str] = load(feedsfile)
+    FORMAT = "%(message)s"
+    logging.basicConfig(
+        level="NOTSET",
+        format=FORMAT,
+        datefmt="[%X]",
+    )
+    log = logging.getLogger("rss_to_instapaper_action")
+
+    auth = BasicAuth(
+        username=environ.get("INSTAPAPER_USERNAME", ""),
+        password=environ.get("INSTAPAPER_PASSWORD", ""),
+    )
+
+    with open("./feeds.opml") as feedsfile:
+        result = listparser.parse(feedsfile)
+    feedslist: list[str] = [feed[0].url for feed in result.feeds]
+    """ TODO Using SQLite, figure out a workflow for:
+      - on first run:
+        - create sqlite db in repo, populate with feed urls and current timestamp in isoformat
+      - on subsequent runs:
+        - check sqlite db for feed urls and timestamps
+        - update db with current timestamps
+      - determine whether first run based on existence checks
+      - feed resulting data structure of the form detailed in the docstring for get_articles() above
+    """
+    feeds = [
+        {
+            "url": url,
+            "last_checked": datetime.now(tz=timezone.utc).isoformat(),
+        } for url in feedslist
+        ]
     urls: list[str] = await get_articles(feeds=feeds)
-    asyncio.run(add_articles(urls=urls))
+    await add_articles(urls=urls, auth=auth, log=log)
 
 
 if __name__ == "__main__":
