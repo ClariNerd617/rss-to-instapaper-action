@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="1.0">
+<head>
+  <title>My feeds</title>
+</head>
+<body>
+<outline text="Feeds" title="Feeds">
+  <outline title="Zettelkasten.de"  type="rss" xmlUrl="https://zettelkasten.de/feed.atom" />
+</outline>
+</body>
+</opml>
