@@ -8,14 +8,14 @@ from httpx import AsyncClient, BasicAuth
 from os import environ
 import logging
 import sqlite3
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import asyncio
 import xml.etree.ElementTree as ET
 from typing import List, Dict, Optional, IO
 from pathlib import Path
 
 
-def parse_opml(source: str|Path|IO[str]) -> List[Dict[str, Optional[str]]]:
+def parse_opml(source: str | Path | IO[str]) -> List[Dict[str, Optional[str]]]:
     """
     Parse an OPML file (path or file-like object) and return a list of feed info dicts.
     Each dict includes: title, text, xml_url, and html_url (if present).
@@ -27,12 +27,15 @@ def parse_opml(source: str|Path|IO[str]) -> List[Dict[str, Optional[str]]]:
     def walk(node):
         for outline in node.findall("outline"):
             if "xmlUrl" in outline.attrib:
-                feeds.append({
-                    "title": outline.attrib.get("title") or outline.attrib.get("text"),
-                    "text": outline.attrib.get("text"),
-                    "xml_url": outline.attrib.get("xmlUrl"),
-                    "html_url": outline.attrib.get("htmlUrl"),
-                })
+                feeds.append(
+                    {
+                        "title": outline.attrib.get("title")
+                        or outline.attrib.get("text"),
+                        "text": outline.attrib.get("text"),
+                        "xml_url": outline.attrib.get("xmlUrl"),
+                        "html_url": outline.attrib.get("htmlUrl"),
+                    }
+                )
             walk(outline)
 
     walk(root.find("body"))
@@ -52,7 +55,7 @@ def get_articles(feeds: list[dict[str, str]]) -> list[str]:
     """
     TODO Implement using feedparser\n
     Will use GitHub Actions to update SQLite DB in repo as detailed in main() below.
-     
+
     feeds data object as follows
     [
         {
@@ -100,9 +103,10 @@ async def main() -> None:
     feeds = [
         {
             "url": url,
-            "last_checked": datetime.now(tz=timezone.utc).isoformat(),
-        } for url in feedslist
-        ]
+            "last_checked": datetime.now(datetime.UTC).isoformat(),
+        }
+        for url in feedslist
+    ]
     urls: list[str] = await get_articles(feeds=feeds)
     await add_articles(urls=urls, auth=auth, log=log)
 
