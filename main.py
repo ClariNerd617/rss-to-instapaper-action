@@ -66,8 +66,7 @@ def get_articles(feeds: list[dict[str, str]]) -> list[str]:
         On the plus side, that means I can async that part too.
         On the minus side, this makes the async main() more complicated for now."""
         feed_parsed = feedparser.parse(feed_url) # unofficially deprecated
-        feed_entries = feed_parsed.entries
-        for entry in feed_entries:
+        for entry in feed_parsed.entries:
             entry_date = datetime.fromisoformat(entry.published)
             if entry_date - last_checked >= timedelta():
                 url_list.append(entry.link)
