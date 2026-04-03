@@ -1,7 +1,7 @@
 # /// script
 # dependencies = [
 #   "httpx",
-#   "feedparser",
+#   "fastfeedparser",
 # ]
 # ///
 
@@ -14,7 +14,7 @@ import asyncio
 import xml.etree.ElementTree as ET
 from typing import List, Dict, Optional, IO
 from pathlib import Path
-import feedparser
+import fastfeedparser as fp
 
 
 def parse_opml(source: str | Path | IO[str]) -> List[Dict[str, Optional[str]]]:
@@ -65,7 +65,7 @@ def get_articles(feeds: list[dict[str, str]]) -> list[str]:
         so I will need to add a get_feeds() function and parse the data here
         On the plus side, that means I can async that part too.
         On the minus side, this makes the async main() more complicated for now."""
-        feed_parsed = feedparser.parse(feed_url) # unofficially deprecated
+        feed_parsed = fp.parse(feed_url) # unofficially deprecated
         for entry in feed_parsed.entries:
             entry_date = datetime.fromisoformat(entry.published)
             if entry_date - last_checked >= timedelta():
@@ -110,6 +110,10 @@ async def main() -> None:
     ]
     urls: list[str] = await get_articles(feeds=feeds)
     # TODO DB UPDATE last_checked -> datetime.now(datetime.UTC).isoformat()
+    """NOTE
+    In the future I want to replace the DB with an environment variable for
+    the last time the code was run that is cached with GitHub Actions caching.
+    """
     await add_articles(urls=urls, auth=auth, log=log)
 
 
